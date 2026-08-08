@@ -182,26 +182,48 @@ describe('Mutation - Criar Funcionário', () => {
         // Gera um CPF diferente a cada execução
         const cpf = Date.now().toString().slice(-11)
 
+        const mutation = `
+            mutation CriarFuncionario($input: CriarFuncionarioInput!) {
+                criarFuncionario(input: $input) {
+                    id
+                    cpf
+                    nome
+                    salario_base
+                    admissao
+                    desligamento
+                }
+            }
+        `
+
+        // Primeiro cadastro com o cpf — deve funcionar, garante que o cpf já existe
+        const primeiraResposta = await request('http://localhost:4000')
+            .post('/graphql')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                query: mutation,
+                variables: {
+                    input: {
+                        cpf,
+                        nome: 'Usuario Teste',
+                        salario_base: 2500,
+                        admissao: '2026-06-30'
+                    }
+                }
+            })
+
+        expect(primeiraResposta.status).to.equal(200)
+        expect(primeiraResposta.body).to.not.have.property('errors')
+
+        // Segundo cadastro com o mesmo cpf — deve falhar
         const resposta = await request('http://localhost:4000')
             .post('/graphql')
             .set('Authorization', `Bearer ${token}`)
             .send({
-                query: `
-                    mutation CriarFuncionario($input: CriarFuncionarioInput!) {
-                        criarFuncionario(input: $input) {
-                            id
-                            cpf
-                            nome
-                            salario_base
-                            admissao
-                            desligamento
-                        }
-                    }
-                `,
+                query: mutation,
                 variables: {
                     input: {
-                        cpf: '012345678900',
-                        nome: 'Usuario Teste',
+                        cpf,
+                        nome: 'Usuario Teste 2',
                         salario_base: 2500,
                         admissao: '2026-06-30'
                     }
